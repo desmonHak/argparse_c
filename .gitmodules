@@ -1,0 +1,4 @@
+[submodule "lib/lexpar_c"]
+	path = lib/lexpar_c
+	url = https://github.com/desmonHak/lexpar_c.git
+	branch = main
