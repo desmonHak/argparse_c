@@ -24,7 +24,6 @@ INCLUDE_FLAGS = 										\
 	-I$(PATH_INCLUDE)									\
 	-I$(PATH_STRUCTS_DATA_C)							\
 	-I$(PATH_LEXPAR)/include							\
-	-I$(PATH_INSTRUCTION)								\
 	-I$(PATH_DEBUG)										\
 	-I$(PATH_COLORS)
 
@@ -46,3 +45,4 @@ CFLAGS_EXAMPLES 		= $(CFLAGS) $(LINKER_FLAGS)
 CFLAGS_EXAMPLES_DEBUG 	= $(CFLAGS_DEBUG) $(LINKER_FLAGS)
 
 OBJECTS 	  = argparse_c.o
+OBJECTS_DEBUG = argparse_c_debug.o
