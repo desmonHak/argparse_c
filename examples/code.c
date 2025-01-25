@@ -2,22 +2,27 @@
 
 int main(int argc, char **argv) {
 
+    #ifdef _WIN32
+    #else
+    sigset_t sa_mask;
+    sigemptyset(&sa_mask); // Inicializa la máscara
+    #endif
+
+
     data_flag_t flags[] = {
         (data_flag_t){
             .long_flag          = "--verbose", 
-            .short_flag         = '-v', 
+            .short_flag         = "-v", 
             .description        = "Imprime más información durante la ejecución",
             .number_arguments   = 0,
-            .optional_arguments = 0,
             .required_arguments = 0,
             .name               = "verbose",
         }, 
         (data_flag_t){
             .long_flag          = "--arg", 
-            .short_flag         = '-a', 
+            .short_flag         = "-a", 
             .description        = "argumento random 1",
             .number_arguments   = 4,
-            .optional_arguments = 3,
             .required_arguments = 1,
             .name               = "arumento 1",
         },

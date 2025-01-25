@@ -38,12 +38,12 @@ argparse_c_debug.o: $(PATH_SRC)/argparse_c.c
 
 cleanobj:
 	$(RM) $(RMFLAGS) $(OBJECTS)
-	$(MAKE) -C ./$(PATH_STRUCTS_DATA_C) -f $(MAKE_NAME) cleanobj
+	$(MAKE) -C ./$(PATH_LEXPAR) -f $(MAKE_NAME) cleanobj
 
 cleanall: cleanobj
 	$(RM) $(RMFLAGS) *.o $(TARGET).a \
-	$(TARGET_DEBUG).a
-	$(MAKE) -C ./$(PATH_STRUCTS_DATA_C) -f $(MAKE_NAME) cleanall
+	$(TARGET_DEBUG).a *.$(EXTENSION) 
+	$(MAKE) -C ./$(PATH_LEXPAR) -f $(MAKE_NAME) cleanall
 
 .SILENT: clean cleanobj cleanall
 .IGNORE: cleanobj cleanall
