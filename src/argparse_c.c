@@ -41,7 +41,11 @@ Token_build_t* token_analysis_argparse_c (Lexer_t *lexer) {
                 if (lexer->chartter == '-') {
                     lexer_advance(lexer); // si se encontro esto, es un argumento largo
                     self =  lexer_parser_arg_long(lexer);
-                } else self = lexer_parser_arg_short(lexer);
+                    self->token = ((Token_t*)get(lexer->hash_table, "--"));
+                } else {
+                    self = lexer_parser_arg_short(lexer);
+                    self->token = ((Token_t*)get(lexer->hash_table, "-"));
+                }
                 lexer_advance(lexer); 
                 return self;
             case '"':
@@ -67,7 +71,7 @@ Token_build_t* token_analysis_argparse_c (Lexer_t *lexer) {
 
 
 
-static inline char* get_sort_flag(data_flag_t  *self) {
+static inline char* get_short_flag(data_flag_t  *self) {
     return self->short_flag;
 }
 static inline char* get_long_flag(data_flag_t  *self) {
@@ -97,8 +101,106 @@ static const inline Token_id inc_token(void) {
         INIT_TYPE_FUNC_DBG(static const inline Token_id, inc_token)
             TYPE_DATA_DBG(void, "")
         END_TYPE_FUNC_DBG);
-    static Token_id my_token_id = token_arg_sort+1;
+    static Token_id my_token_id = token_arg_short+1;
     return my_token_id++;
+}
+
+void formated_args(
+        Lexer_t *lexer, 
+        func_token_analysis token_analysis,                     // funcion que analiza cada token
+        f_token_process _f_token_process,                       // funcion que procesa cada token
+        data_ret_f_token_process *data_ret_of_f_token_process   // datos retornados por el callback
+    ) {
+    DEBUG_PRINT(DEBUG_LEVEL_INFO,
+        INIT_TYPE_FUNC_DBG(void  , formated_args)
+            TYPE_DATA_DBG(Lexer_t*, "lexer = %p")
+            TYPE_DATA_DBG(func_token_analysis, "token_analysis = %p")
+            TYPE_DATA_DBG(f_token_process, "_f_token_process = %p")
+            TYPE_DATA_DBG(data_ret_f_token_process, "data_ret_of_f_token_process = %p")
+        END_TYPE_FUNC_DBG,
+    lexer, token_analysis, _f_token_process, data_ret_of_f_token_process);
+
+    if (lexer == NULL) {
+        DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: Lexer no inicializado\n");
+        return;
+    }
+    if (token_analysis == NULL) {
+        DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: Token analysis no inicializado\n");
+        return;
+    }
+    Token_build_t* tok;
+    Token_id token_eof    = ((Token_t*)get(lexer->hash_table, build_token_special(TOKEN_EOF)))->type;
+
+    // es necesesario hacerlo si la variable global y static token_id nunca fue definida-
+    Token_id token_id    = ((Token_t*)get(lexer->hash_table, build_token_special(TOKEN_ID)))->type;
+
+    while ( 1 ) {
+        tok = lexer_next_token(lexer, token_analysis);
+        if ( tok == NULL ) {
+            DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: Tok devolvio NULL (tok == NULL)\n");
+        } else {
+            if ( tok->token == NULL ) {
+                DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: Token no encontrado (tok->token == NULL)\n");
+                goto exit_free_tok;
+            } else { // imprimir el token
+                if ( token_eof == tok->token->type ) break;
+                /*print_token(tok->token);
+                if (tok->token->type == token_id){
+                    printf_color("\ttoken id encontrado: %s\n", (const char *)tok->value_process);
+                }*/
+                _f_token_process(lexer, tok, data_ret_of_f_token_process); // procesar el token
+                free(tok);
+            }
+        }
+    }
+
+    exit_free_tok:
+    if (tok != NULL) free(tok); // liberar el Token_build_t
+
+    restore_lexer:
+    // restaurar el lexer, es necesario para poder seguir operando con el
+    restore_lexer(lexer);
+}
+
+void count_number_flags_short(
+        Lexer_t * lexer,                                        // lexer del que obtener los tokens via hash_table
+        Token_build_t* tok,                                     // token actual a analizar
+        data_ret_f_token_process *data_ret_of_f_token_process   // datos retornados por el callback
+    ) {
+    DEBUG_PRINT(DEBUG_LEVEL_INFO,
+        INIT_TYPE_FUNC_DBG(void  , count_number_flags_short)
+            TYPE_DATA_DBG(Lexer_t*, "lexer = %p")
+            TYPE_DATA_DBG(Token_build_t*, "tok = %p")
+            TYPE_DATA_DBG(data_ret_f_token_process, "data_ret_of_f_token_process = %p")
+        END_TYPE_FUNC_DBG,
+    lexer, tok, data_ret_of_f_token_process);
+    /*
+     * Permite contar la cantidad de flags "cortas" instroducidas en la linea de comandos
+     */
+    Token_t* token_short_flags = ((Token_t*)get(lexer->hash_table, "-"));
+    if (tok->token->type == token_short_flags->type){
+        data_ret_of_f_token_process->count_number_flags_short.number_short_flags++; 
+    }
+}
+void count_number_flags_long(
+        Lexer_t * lexer,                                        // lexer del que obtener los tokens via hash_table
+        Token_build_t* tok,                                     // token actual a analizar
+        data_ret_f_token_process *data_ret_of_f_token_process   // datos retornados por el callback
+    ) {
+    DEBUG_PRINT(DEBUG_LEVEL_INFO,
+        INIT_TYPE_FUNC_DBG(void  , count_number_flags_long)
+            TYPE_DATA_DBG(Lexer_t*, "lexer = %p")
+            TYPE_DATA_DBG(Token_build_t*, "tok = %p")
+            TYPE_DATA_DBG(data_ret_f_token_process, "data_ret_of_f_token_process = %p")
+        END_TYPE_FUNC_DBG,
+    lexer, tok, data_ret_of_f_token_process);
+    /*
+     * Permite contar la cantidad de flags "largas" instroducidas en la linea de comandos
+     */
+    Token_t* token_long_flags = ((Token_t*)get(lexer->hash_table, "--"));
+    if (tok->token->type == token_long_flags->type){
+        data_ret_of_f_token_process->count_number_flags_long.number_long_flags++;
+    }
 }
 
 
@@ -137,7 +239,8 @@ argparse_t init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_
 
     const position positions_tokens[] = {
         push_token(&(self.lexer), create_token(create_name_token(token_val),           build_token_special(TOKEN_VAL),             token_val)),
-        push_token(&(self.lexer), create_token(create_name_token(token_arg_sort),       "-",                                  token_arg_sort)),
+        push_token(&(self.lexer), create_token(create_name_token(token_arg_short),      "-",                                   token_arg_short)),
+        push_token(&(self.lexer), create_token(create_name_token(token_arg_long),      "--",                                  token_arg_long)),
         push_token(&(self.lexer), create_token(create_name_token(token_number),        build_token_special(TOKEN_NUMBER),          inc_token)),
         push_token(&(self.lexer), create_token(create_name_token(token_id),            build_token_special(TOKEN_ID),              inc_token)),
         push_token(&(self.lexer), create_token(create_name_token(token_eof),           build_token_special(TOKEN_EOF),             inc_token)),
@@ -149,10 +252,23 @@ argparse_t init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_
     build_lexer(&(self.lexer));
 
     // print_tokens(&(self.lexer));
-    print_Token_build(&(self.lexer), token_analysis_argparse_c);
+    // print_Token_build(&(self.lexer), token_analysis_argparse_c);
 
-    
-    //self.table_args = createHashTable();
+
+    data_ret_f_token_process data = {0};
+
+    formated_args(&(self.lexer), token_analysis_argparse_c, count_number_flags_short, &data);
+    printf("Cantidad de flags cortas: %d\n", data.count_number_flags_short.number_short_flags);
+    size_t size_hash_table_flags = data.count_number_flags_short.number_short_flags;
+
+    data.count_number_flags_short.number_short_flags = 0;
+
+    formated_args(&(self.lexer), token_analysis_argparse_c, count_number_flags_long, &data);
+    printf("Cantidad de flags largas: %d\n", data.count_number_flags_long.number_long_flags);
+    size_hash_table_flags += data.count_number_flags_long.number_long_flags;
+
+    // calcular previamente el tamaño de la tabla hash necesario para contener todas las flags
+    self.table_args = createHashTable(size_hash_table_flags);
 
 }
 
@@ -162,9 +278,15 @@ void free_argparse(argparse_t *self) {
             TYPE_DATA_DBG(argparse_t, "self = %p")
         END_TYPE_FUNC_DBG,
         self);
-    //freeHashTable(arguments);
-    //free_lexer(&(self->lexer)); // la funcion destructora de vectores dinamicos tiene errores
-    // y crashea al intentar liberar elementos liberados
+    if (self->table_args != NULL){
+        freeHashTable(self->table_args);
+        self->table_args = NULL;
+    }
+    //if (self->lexer.hash_table != NULL){
+    //    freeHashTable(self->lexer.hash_table);
+    //    self->lexer.hash_table = NULL;
+    //}
+    //free_lexer(&(self->lexer)); 
 }
 
 
