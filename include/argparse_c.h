@@ -43,13 +43,45 @@ typedef union data_ret_f_token_process {
     } count_number_flags_long;
 
     struct {
-
-    }
+        IN_DATA_UNION argparse_t* arguments; // apuntador al argparse_t
+    } put_flags_short_and_long;
 } data_ret_f_token_process; 
 
 typedef void (*f_token_process)(Lexer_t *, Token_build_t*, data_ret_f_token_process*);
 
 void free_argparse(argparse_t **self);
 argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_flags);
+bool check_flags_repetition(
+    data_flag_t* flags,                 // flags con la informacion
+    size_t size_flags,                  // cantidad de flags
+    char* (*get_flag_f)(data_flag_t*)   // funcion que devuelve una flag corta o larga
+);
+
+void count_number_flags_short(
+    Lexer_t * lexer,                                        // lexer del que obtener los tokens via hash_table
+    Token_build_t* tok,                                     // token actual a analizar
+    data_ret_f_token_process *data_ret_of_f_token_process   // datos retornados por el callback
+);
+
+void count_number_flags_long(
+    Lexer_t * lexer,                                        // lexer del que obtener los tokens via hash_table
+    Token_build_t* tok,                                     // token actual a analizar
+    data_ret_f_token_process *data_ret_of_f_token_process   // datos retornados por el callback
+);
+
+static inline char* get_short_flag(data_flag_t  *self) {
+    if (!self) return NULL;
+    return self->short_flag;
+}
+static inline char* get_long_flag(data_flag_t  *self) {
+    if (!self) return NULL;
+    return self->long_flag;
+}
+
+#ifndef DEBUG_ENABLE
+#define _check_flags_repetition check_flags_repetition
+#else 
+#define _check_flags_repetition 0
+#endif
 
 #endif

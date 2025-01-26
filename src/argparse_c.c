@@ -70,29 +70,41 @@ Token_build_t* token_analysis_argparse_c (Lexer_t *lexer) {
 }
 
 
-
-static inline char* get_short_flag(data_flag_t  *self) {
-    return self->short_flag;
-}
-static inline char* get_long_flag(data_flag_t  *self) {
-    return self->long_flag;
-}
-
 bool check_flags_repetition(
         data_flag_t* flags,                 // flags con la informacion
         size_t size_flags,                  // cantidad de flags
         char* (*get_flag_f)(data_flag_t*)   // funcion que devuelve una flag corta o larga
     ) {
-
+        DEBUG_PRINT(DEBUG_LEVEL_INFO,
+        INIT_TYPE_FUNC_DBG(bool, check_flags_repetition)
+            TYPE_DATA_DBG(data_flag_t*, "flags = %p")
+            TYPE_DATA_DBG(size_t, "size_flags = %zu")
+            TYPE_DATA_DBG(char* (*)(data_flag_t*), "get_flag_f = %p")
+        END_TYPE_FUNC_DBG,
+        flags, size_flags, get_flag_f);
     // Coste O(n^2) por la comprobacion de repeticion
-    char* flags_string = NULL;
-    for (int i = 0; i < size_flags; i++) {
-        flags_string = get_flag_f(&(flags[i]));
-        for (int j = 0; i < size_flags; j++) {
+    char* flags_string1 = NULL, *flags_string2 = NULL;
+    uint8_t repetitions = 0;
+    /* 
+     * si una flag se repite en el array de flags, por ejemplo una cantidad de dos veces,
+     * la cantidad de repeticiones sera size_flags * 2, en caso de que se repite una sola vez,
+     * repeticiones sera == size_flags.
+     */
 
+    for (uint32_t i = 0; i < size_flags; i++) {
+        flags_string1 = get_flag_f(&(flags[i])); // para cada flag i
+        for (uint32_t j = 0; j < size_flags; j++) {
+            // se comprueba si el flag j es igual al flag i
+            flags_string2 = get_flag_f(&(flags[j]));
+            if (strcmp(flags_string1, flags_string2) == 0) {
+                repetitions++; // se ha encontrado un flag repetido
+            }
+            if (repetitions > size_flags) {
+                return true; // se ha encontrado un flag repetido
+            }
         }
     }
-
+    return false; // no se ha encontrado ningun flag repetido
 }
 
 // funcion "privada" autoincremental
@@ -263,7 +275,7 @@ argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size
     //printf("Cantidad de flags cortas: %d\n", data.count_number_flags_short.number_short_flags);
     size_t size_hash_table_flags = data.count_number_flags_short.number_short_flags;
 
-    data.count_number_flags_short.number_short_flags = 0;
+    data.count_number_flags_short.number_short_flags = 0; // restaurar el enum a 0 para la próxima ejecución
 
     formated_args(&(self->lexer), token_analysis_argparse_c, count_number_flags_long, &data);
     //printf("Cantidad de flags largas: %d\n", data.count_number_flags_long.number_long_flags);

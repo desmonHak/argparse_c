@@ -25,10 +25,22 @@ int main(int argc, char **argv) {
             .number_arguments   = 4,
             .required_arguments = 1,
             .name               = "arumento 1",
-        },
-            
+        }, 
+        (data_flag_t){
+            .long_flag          = "--arg", 
+            .short_flag         = "-a", 
+            .description        = "argumento random 1",
+            .number_arguments   = 4,
+            .required_arguments = 1,
+            .name               = "arumento 1",
+        }
     };
-
+    if (_check_flags_repetition(flags, 
+            sizeof(flags) / sizeof(data_flag_t), 
+                get_long_flag)) {
+        printf("Error: Alguna flag que se definio esta repetia está repetida.\n");
+        return 1;
+    }
     argparse_t *arguments = init_argparse(argc, argv, flags, sizeof(flags) / sizeof(data_flag_t) );
     free_argparse(&arguments);
         printf("arguments %p\n", arguments);
