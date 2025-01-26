@@ -29,8 +29,9 @@ int main(int argc, char **argv) {
             
     };
 
-    argparse_t arguments = init_argparse(argc, argv, flags, sizeof(flags) / sizeof(data_flag_t) );
-
+    argparse_t *arguments = init_argparse(argc, argv, flags, sizeof(flags) / sizeof(data_flag_t) );
     free_argparse(&arguments);
+        printf("arguments %p\n", arguments);
+
     puts("Exit...");
 }

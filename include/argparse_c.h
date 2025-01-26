@@ -43,13 +43,13 @@ typedef union data_ret_f_token_process {
     } count_number_flags_long;
 
     struct {
-        
+
     }
 } data_ret_f_token_process; 
 
 typedef void (*f_token_process)(Lexer_t *, Token_build_t*, data_ret_f_token_process*);
 
-void free_argparse(argparse_t *self);
-argparse_t init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_flags);
+void free_argparse(argparse_t **self);
+argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_flags);
 
 #endif

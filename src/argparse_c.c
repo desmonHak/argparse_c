@@ -204,7 +204,7 @@ void count_number_flags_long(
 }
 
 
-argparse_t init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_flags) {
+argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_flags) {
     DEBUG_PRINT(DEBUG_LEVEL_INFO,
         INIT_TYPE_FUNC_DBG(argparse_t, init_argparse)
             TYPE_DATA_DBG(int, "argc = %d")
@@ -212,81 +212,84 @@ argparse_t init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_
         END_TYPE_FUNC_DBG,
         argc, argv);
 
-    argparse_t self = {.argc = argc, .argv = argv};
-    self.size_all_arguments = argc * 3; // multiplicar por 3 para cada argumento por el espacio y las comillas
+    argparse_t *self;
+    debug_calloc(argparse_t, self, 1, sizeof(argparse_t));
+    *self = (argparse_t){.argc = argc, .argv = argv};
+    self->size_all_arguments = argc * 3; // multiplicar por 3 para cada argumento por el espacio y las comillas
     for (int i = 1; i < argc; i++){
-        self.size_all_arguments += strlen(argv[i]);
+        self->size_all_arguments += strlen(argv[i]);
     }
 
-    self.all_arguments = NULL;
-    debug_calloc(char, self.all_arguments, self.size_all_arguments + 1, sizeof(char));
+    self->all_arguments = NULL;
+    debug_calloc(char, self->all_arguments, self->size_all_arguments + 1, sizeof(char));
 
     size_t cursor = 0;
     for (int i = 1; i < argc; i++) {
-        self.all_arguments[cursor++] = '"';             // Agregar comilla inicial
-        strcpy(self.all_arguments + cursor, argv[i]);   // Copiar argumento
+        self->all_arguments[cursor++] = '"';             // Agregar comilla inicial
+        strcpy(self->all_arguments + cursor, argv[i]);   // Copiar argumento
         cursor += strlen(argv[i]);                      // Ajustar el cursor después de copiar
-        self.all_arguments[cursor++] = '"';             // Agregar comilla final
+        self->all_arguments[cursor++] = '"';             // Agregar comilla final
         if (i < argc - 1) {                             // Agregar espacio si no es el último argumento
-            self.all_arguments[cursor++] = ' ';
+            self->all_arguments[cursor++] = ' ';
         }
     }
-    self.all_arguments[cursor] = '\0';  // Terminar la cadena
+    self->all_arguments[cursor] = '\0';  // Terminar la cadena
 
-    self.lexer = init_lexer(self.all_arguments, self.size_all_arguments);
-    printf("%s\n", self.all_arguments);
+    self->lexer = init_lexer(self->all_arguments, self->size_all_arguments);
+    printf("%s\n", self->all_arguments);
     func_auto_increment func = inc_token;
 
     const position positions_tokens[] = {
-        push_token(&(self.lexer), create_token(create_name_token(token_val),           build_token_special(TOKEN_VAL),             token_val)),
-        push_token(&(self.lexer), create_token(create_name_token(token_arg_short),      "-",                                   token_arg_short)),
-        push_token(&(self.lexer), create_token(create_name_token(token_arg_long),      "--",                                  token_arg_long)),
-        push_token(&(self.lexer), create_token(create_name_token(token_number),        build_token_special(TOKEN_NUMBER),          inc_token)),
-        push_token(&(self.lexer), create_token(create_name_token(token_id),            build_token_special(TOKEN_ID),              inc_token)),
-        push_token(&(self.lexer), create_token(create_name_token(token_eof),           build_token_special(TOKEN_EOF),             inc_token)),
-        push_token(&(self.lexer), create_token(create_name_token(token_string_simple), build_token_special(TOKEN_STRING_SIMPLE),   inc_token)),
-        push_token(&(self.lexer), create_token(create_name_token(token_string_double), build_token_special(TOKEN_STRING_DOUBLE),   inc_token))
+        push_token(&(self->lexer), create_token(create_name_token(token_val),           build_token_special(TOKEN_VAL),             token_val)),
+        push_token(&(self->lexer), create_token(create_name_token(token_arg_short),      "-",                                   token_arg_short)),
+        push_token(&(self->lexer), create_token(create_name_token(token_arg_long),      "--",                                  token_arg_long)),
+        push_token(&(self->lexer), create_token(create_name_token(token_number),        build_token_special(TOKEN_NUMBER),          inc_token)),
+        push_token(&(self->lexer), create_token(create_name_token(token_id),            build_token_special(TOKEN_ID),              inc_token)),
+        push_token(&(self->lexer), create_token(create_name_token(token_eof),           build_token_special(TOKEN_EOF),             inc_token)),
+        push_token(&(self->lexer), create_token(create_name_token(token_string_simple), build_token_special(TOKEN_STRING_SIMPLE),   inc_token)),
+        push_token(&(self->lexer), create_token(create_name_token(token_string_double), build_token_special(TOKEN_STRING_DOUBLE),   inc_token))
     };
 
     // construir el lexer con los tokens:
-    build_lexer(&(self.lexer));
+    build_lexer(&(self->lexer));
 
-    // print_tokens(&(self.lexer));
-    // print_Token_build(&(self.lexer), token_analysis_argparse_c);
+    // print_tokens(&(self->lexer));
+    // print_Token_build(&(self->lexer), token_analysis_argparse_c);
 
 
     data_ret_f_token_process data = {0};
 
-    formated_args(&(self.lexer), token_analysis_argparse_c, count_number_flags_short, &data);
-    printf("Cantidad de flags cortas: %d\n", data.count_number_flags_short.number_short_flags);
+    formated_args(&(self->lexer), token_analysis_argparse_c, count_number_flags_short, &data);
+    //printf("Cantidad de flags cortas: %d\n", data.count_number_flags_short.number_short_flags);
     size_t size_hash_table_flags = data.count_number_flags_short.number_short_flags;
 
     data.count_number_flags_short.number_short_flags = 0;
 
-    formated_args(&(self.lexer), token_analysis_argparse_c, count_number_flags_long, &data);
-    printf("Cantidad de flags largas: %d\n", data.count_number_flags_long.number_long_flags);
+    formated_args(&(self->lexer), token_analysis_argparse_c, count_number_flags_long, &data);
+    //printf("Cantidad de flags largas: %d\n", data.count_number_flags_long.number_long_flags);
     size_hash_table_flags += data.count_number_flags_long.number_long_flags;
 
     // calcular previamente el tamaño de la tabla hash necesario para contener todas las flags
-    self.table_args = createHashTable(size_hash_table_flags);
-
+    self->table_args = createHashTable(size_hash_table_flags);
+    return self;
 }
 
-void free_argparse(argparse_t *self) {
+void free_argparse(argparse_t **self) {
     DEBUG_PRINT(DEBUG_LEVEL_INFO,
         INIT_TYPE_FUNC_DBG(void, free_argparse)
-            TYPE_DATA_DBG(argparse_t, "self = %p")
+            TYPE_DATA_DBG(argparse_t**, "self = %p")
         END_TYPE_FUNC_DBG,
         self);
-    if (self->table_args != NULL){
-        freeHashTable(self->table_args);
-        self->table_args = NULL;
+    if (self != NULL || *self!= NULL) return;
+    
+    argparse_t *_self = *self;
+    if (_self->table_args != NULL){
+        freeHashTable(_self->table_args);
+        _self->table_args = NULL;
     }
-    //if (self->lexer.hash_table != NULL){
-    //    freeHashTable(self->lexer.hash_table);
-    //    self->lexer.hash_table = NULL;
-    //}
-    //free_lexer(&(self->lexer)); 
+    free_lexer(&(_self->lexer)); 
+    free(_self);
+    *self = NULL; // poner el puntero liberado a nulo
 }
 
 
