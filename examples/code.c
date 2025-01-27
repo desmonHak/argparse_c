@@ -78,9 +78,11 @@ int main(int argc, char **argv) {
     printf("Argumento '--arg' con los siguientes valores %zu:\n", size_a(arg_data));
     forEachNew(arg_data, (void (*)(void *))printTokenBuildInfo);
 
-    ArrayList *arg_s = get(arguments->table_args, "s");
+    // si se usa esto, al usar un "--suma hola 5 -s 4" el 4 sobrescribira el 'hola'
+    // si get(arguments->table_args, "s") es null, se devuelve get(arguments->table_args, "suma")
+    ArrayList *arg_s = get(arguments->table_args, "s") ?: get(arguments->table_args, "suma");
     if (arg_s == NULL) {
-        printf("Error: No se encontro el argumento '-s'.\n");
+        printf("Error: No se encontro el argumento '-s'/'--suma'.\n");
         return 1;
     }
 
