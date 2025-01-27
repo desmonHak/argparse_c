@@ -270,7 +270,10 @@ void add_flag_to_hash_table(
 
             repeat_searh_flags:
             // si esta flag tiene argumentos y no tiene mas que los especificados
-            if (flag_info->number_arguments != 0 && args_flags < flag_info->number_arguments) { 
+            if (flag_info->number_arguments != 0 && 
+                   ( 
+                    (args_flags < flag_info->number_arguments))
+                ) { 
                 /*
                  * hacemos una copia del lexer para seguir operando con el
                  * si se necesita restaurar el lexer a un punto anterior
@@ -286,9 +289,13 @@ void add_flag_to_hash_table(
                 if (token_desconocido->token->type == token_eof) return;
                 if (
                     (
-                        (token_desconocido->token->type == token_arg_long || 
-                        token_desconocido->token->type == token_arg_short)
-                    ) && flag_info->number_arguments > 0 // si el token es una flag y tiene argumentos 
+                        (
+                            (token_desconocido->token->type == token_arg_long || 
+                            token_desconocido->token->type == token_arg_short)
+                        ) && 
+                            (flag_info->number_arguments > 0) // si el token es una flag y tiene argumentos 
+                        ) &&
+                    (args_flags < flag_info->required_arguments)   // o la cantidad de argumentos para la flag es menor a la especificada
                 ) {
 
                     // si la cantidad de argumentos para la flag es menor a la especificada, indicar error
@@ -297,21 +304,27 @@ void add_flag_to_hash_table(
                         memcpy(lexer, &lexer_backup_data, sizeof(lexer));
                         printf("Error: Faltan argumentos requeridos para la flag %s\n", (const char*)flag_actual);
                         return;
-                    } 
+                    }
                 } else {
-                    // poner el token desconocido al array de argumentos de la flag
-                    Token_build_t *token_copia = NULL;
-                    debug_malloc(Token_build_t, token_copia, sizeof(Token_build_t)); // esto es necesario ya que token_desconocido se libera dentro y fuera de la funcion
-                    memcpy(token_copia, token_desconocido, sizeof(Token_build_t));
-                    push_back_a(data_this_flag, token_copia);
+                    if ((token_desconocido->token->type != token_arg_long && token_desconocido->token->type != token_arg_short))
+                    {
+                        // poner el token desconocido al array de argumentos de la flag
+                        Token_build_t *token_copia = NULL;
+                        debug_malloc(Token_build_t, token_copia, sizeof(Token_build_t)); // esto es necesario ya que token_desconocido se libera dentro y fuera de la funcion
+                        memcpy(token_copia, token_desconocido, sizeof(Token_build_t));
+                        push_back_a(data_this_flag, token_copia);
 
-                    //printf("Agregando argumento %zu para la flag %s -> %s\n", args_flags + 1, (const char*)flag_actual, token_desconocido->value_process);
-                    shrink_to_fit(data_this_flag);
-                    // forEach(data_this_flag, printTokenBuildInfo); // imprimir los tokens de los argumentos, el arraylist
-                    args_flags++;
-                    //token_desconocido = lexer_next_token(lexer, token_analysis_argparse_c);
-                    free(token_desconocido);
-                    goto repeat_searh_flags;
+                        //printf("Agregando argumento %zu para la flag %s -> %s\n", args_flags + 1, (const char*)flag_actual, token_desconocido->value_process);
+                        shrink_to_fit(data_this_flag);
+                        // forEach(data_this_flag, printTokenBuildInfo); // imprimir los tokens de los argumentos, el arraylist
+                        args_flags++;
+                        //token_desconocido = lexer_next_token(lexer, token_analysis_argparse_c);
+                        free(token_desconocido);
+                        goto repeat_searh_flags;
+                    } else {
+                        tok = token_desconocido;
+                        goto return_all_func;
+                    }
                 }
                 
             }

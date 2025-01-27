@@ -8,6 +8,8 @@ int main(int argc, char **argv) {
     sigemptyset(&sa_mask); // Inicializa la máscara
     #endif
 
+    // ./code.elf   --arg 2 3 6 -s hola munfo4 5
+    // si se indica que solo 1 arg es obligatorio y el resto opcionales, se lo toma como obligatorios
 
     data_flag_t flags[] = {
         (data_flag_t){
@@ -65,6 +67,8 @@ int main(int argc, char **argv) {
     }
     argparse_t *arguments = init_argparse(argc, argv, flags, sizeof(flags) / sizeof(data_flag_t) );
 
+    printHashTable(arguments->table_args);
+
     ArrayList *arg_data = get(arguments->table_args, "arg");
     if (arg_data == NULL) {
         printf("Error: No se encontro el argumento '--arg'.\n");
@@ -74,10 +78,19 @@ int main(int argc, char **argv) {
     printf("Argumento '--arg' con los siguientes valores %zu:\n", size_a(arg_data));
     forEachNew(arg_data, (void (*)(void *))printTokenBuildInfo);
 
-    for (int i = 0; i < arg_data->Size; i++) {
-        printf("dato[%d]: %p\n", i, arg_data->Array[i]);
-        printTokenBuildInfo((void*)arg_data->Array[i]);
+    ArrayList *arg_s = get(arguments->table_args, "s");
+    if (arg_s == NULL) {
+        printf("Error: No se encontro el argumento '-s'.\n");
+        return 1;
     }
+
+    printf("Argumento '-s' con los siguientes valores %zu:\n", size_a(arg_s));
+    forEachNew(arg_s, (void (*)(void *))printTokenBuildInfo);
+
+    //for (int i = 0; i < arg_data->Size; i++) {
+    //    printf("dato[%d]: %p\n", i, arg_data->Array[i]);
+    //    printTokenBuildInfo((void*)arg_data->Array[i]);
+    //}
 
     free_argparse(&arguments);
 
