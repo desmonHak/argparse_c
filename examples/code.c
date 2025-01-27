@@ -11,33 +11,23 @@ int main(int argc, char **argv) {
 
     data_flag_t flags[] = {
         (data_flag_t){
-            .long_flag          = "--verbose", 
-            .short_flag         = "-v", 
-            .description        = "Imprime más información durante la ejecución",
+            .long_flag          = "verbose", 
+            .short_flag         = "v", 
+            .description        = "Imprime mas informacion durante la ejecucion",
             .number_arguments   = 0,
             .required_arguments = 0,
             .name               = "verbose",
         }, 
         (data_flag_t){
-            .long_flag          = "--arg", 
-            .short_flag         = "-a", 
-            .description        = "argumento random 1",
-            .number_arguments   = 4,
-            .required_arguments = 1,
-            .name               = "arumento 1",
-        }, 
-        (data_flag_t){
-            .long_flag          = "--arg", 
-            .short_flag         = "-a", 
+            .long_flag          = "arg", 
+            .short_flag         = "a", 
             .description        = "argumento random 1",
             .number_arguments   = 4,
             .required_arguments = 1,
             .name               = "arumento 1",
         }
     };
-    if (_check_flags_repetition(flags, 
-            sizeof(flags) / sizeof(data_flag_t), 
-                get_long_flag)) {
+    if (_check_flags_repetition(flags)) {
         printf("Error: Alguna flag que se definio esta repetia está repetida.\n");
         return 1;
     }

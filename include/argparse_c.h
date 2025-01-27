@@ -17,7 +17,8 @@ typedef struct argparse_t {
     int                   argc; // cantidad de argumentos obtenidos desde el main
     char                **argv; // arreglo de argumentos obtenidos desde el main
     Lexer_t              lexer; // lexer para analizar los argumentos
-    HashTable      *table_args; // tabla hash con los argumentos
+    HashTable      *table_args; // tabla hash con los argumentos parseados
+    HashTable      *table_data_flag_t; // tabla hash con los datos de las flags definidas
 } argparse_t;
 
 typedef struct data_flag_t {
@@ -78,10 +79,14 @@ static inline char* get_long_flag(data_flag_t  *self) {
     return self->long_flag;
 }
 
-#ifndef DEBUG_ENABLE
-#define _check_flags_repetition check_flags_repetition
+HashTable* convert_data_flag_t_arr_to_hash_table(data_flag_t* flags, size_t size_flags);
+
+#ifdef DEBUG_ENABLE
+#define _check_flags_repetition(flags)                                                    \
+    (check_flags_repetition(flags, sizeof(flags) / sizeof(data_flag_t), get_long_flag) || \
+    check_flags_repetition(flags, sizeof(flags) / sizeof(data_flag_t), get_short_flag))
 #else 
-#define _check_flags_repetition 0
+#define _check_flags_repetition(flags) false
 #endif
 
 #endif

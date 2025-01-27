@@ -216,6 +216,102 @@ void count_number_flags_long(
 }
 
 
+void print_data_flag(const data_flag_t* flag) {
+    if (!flag) {
+        printf("La estructura es NULL.\n");
+        return;
+    }
+    
+    printf("Nombre del argumento            : '%s'\n", flag->name ? flag->name : "N/A");
+    printf("Flag corta                      : -%s\n", flag->short_flag ? flag->short_flag : "N/A");
+    printf("Flag larga                      : --%s\n", flag->long_flag ? flag->long_flag : "N/A");
+    printf("Descripcion                     : %s\n", flag->description ? flag->description : "N/A");
+    printf("Numero de flags asociados       : %u\n", flag->number_arguments);
+    printf("Numero de argumentos requeridos : %u\n", flag->required_arguments);
+}
+
+
+void add_flag_to_hash_table(
+    Lexer_t * lexer,                                        // lexer del que obtener los tokens via hash_table
+    Token_build_t* tok,                                     // token actual a analizar
+    data_ret_f_token_process *data_ret_of_f_token_process   // datos retornados por el callback
+) {
+    Token_id  token_eof         = ((Token_t*)get(lexer->hash_table, build_token_special(TOKEN_EOF)))->type;
+
+    return_all_func:
+    // si se contro un --<flag_long> o un -<flag_short>
+    if (tok->token->type == token_arg_long || tok->token->type == token_arg_short){
+        
+        /*
+         * Crear una array dinamico en la tabla de hash, obteniendo la cantidad de argumentos
+         * posibles que la flag encontrada puede tener, de esa manera, generar un array con el tamaño
+         * especificado.
+         */
+        argparse_t * arguments_data = data_ret_of_f_token_process->put_flags_short_and_long.arguments;
+        data_flag_t* flag_info = (data_flag_t*)get(arguments_data->table_data_flag_t, ((const char*)tok->value_process));
+
+        char* flag_actual = tok->value_process;
+        if (flag_info != NULL) {
+            ArrayList * data_this_flag = (
+                (
+                    flag_info->number_arguments != 0) ? 
+                    createArrayList(flag_info->number_arguments, NULL) 
+                    : NULL
+                );
+            put(arguments_data->table_data_flag_t, (const char*)flag_actual, data_this_flag) ;
+
+            DEBUG_PRINT(DEBUG_LEVEL_INFO, " [Flag encontrada] Agregando flag %s a la tabla de hash\n", (const char*)tok->value_process);
+            // print_data_flag(flag_info); // imprimir los datos de la flag encontrada
+
+            size_t args_flags = 0; // cantidad de argumentos que se encontro a la flag
+
+            repeat_searh_flags:
+            // si esta flag tiene argumentos y no tiene mas que los especificados
+            if (flag_info->number_arguments != 0 && args_flags < flag_info->number_arguments) { 
+                /*
+                 * hacemos una copia del lexer para seguir operando con el
+                 * si se necesita restaurar el lexer a un punto anterior
+                 */
+                Lexer_t lexer_backup_data = backup_lexer(lexer); 
+
+                /*
+                 * avanzamo el lexer al siguiente token
+                 */
+                Token_build_t *token_desconocido = lexer_next_token(lexer, token_analysis_argparse_c);
+                if (token_desconocido->token->type == token_eof) return;
+                if (
+                    (
+                        (token_desconocido->token->type == token_arg_long || 
+                        token_desconocido->token->type == token_arg_short)
+                    ) && flag_info->number_arguments > 0 // si el token es una flag y tiene argumentos 
+                ) {
+
+                    // si la cantidad de argumentos para la flag es menor a la especificada, indicar error
+                    if (args_flags <= flag_info->required_arguments) {
+                        // restaurar el lexer al estado anterior
+                        memcpy(lexer, &lexer_backup_data, sizeof(lexer));
+                        printf("Error: Faltan argumentos requeridos para la flag %s\n", (const char*)flag_actual);
+                        return;
+                    } 
+                } else {
+                    // poner el token desconocido al array de argumentos de la flag
+                    push_back_a(data_this_flag, token_desconocido);
+                    //printf("Agregando argumento %zu para la flag %s -> %s\n", args_flags + 1, (const char*)flag_actual, token_desconocido->value_process);
+                    shrink_to_fit(data_this_flag);
+                    // forEach(data_this_flag, printTokenBuildInfo); // imprimir los tokens de los argumentos, el arraylist
+                    args_flags++;
+                    //token_desconocido = lexer_next_token(lexer, token_analysis_argparse_c);
+                    goto repeat_searh_flags;
+                }
+                
+            }
+
+        } else {
+            printf("Error: Flag %s no encontrada en la tabla de flags\n", (const char*)flag_actual);
+        }
+    }
+}
+
 argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_flags) {
     DEBUG_PRINT(DEBUG_LEVEL_INFO,
         INIT_TYPE_FUNC_DBG(argparse_t, init_argparse)
@@ -281,8 +377,18 @@ argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size
     //printf("Cantidad de flags largas: %d\n", data.count_number_flags_long.number_long_flags);
     size_hash_table_flags += data.count_number_flags_long.number_long_flags;
 
+    // convertir el array de flags a una tabla hash para una fácil y mejor manipulación
+    self->table_data_flag_t = convert_data_flag_t_arr_to_hash_table(flags, size_flags);
+
     // calcular previamente el tamaño de la tabla hash necesario para contener todas las flags
     self->table_args = createHashTable(size_hash_table_flags);
+
+    // poner la estructura de datos para almacenar los flags y sus valores en la tabla de hash
+    data.put_flags_short_and_long.arguments = self;
+
+    // agregar todos los flags a la tabla hash con sus respectivos valores
+    formated_args(&(self->lexer), token_analysis_argparse_c, add_flag_to_hash_table, &data);
+
     return self;
 }
 
@@ -304,6 +410,36 @@ void free_argparse(argparse_t **self) {
     *self = NULL; // poner el puntero liberado a nulo
 }
 
+
+HashTable* convert_data_flag_t_arr_to_hash_table(data_flag_t* flags, size_t size_flags) {
+    /*
+     * en caso de que flags sea reservado dinamicamente, no se puede liberar mientras el hashtable
+     * creado este en uso
+     */
+    if (flags == NULL) return NULL;
+
+    // crear una tabla hash con la cantidad de flags especificados en size_flags.
+    HashTable *hash_table = createHashTable(size_flags*2); // *2 para las flags cortos y largas.
+    
+    for (size_t i = 0; i < size_flags; i++) {
+        if (flags[i].long_flag == NULL){
+            if (flags[i].short_flag == NULL){
+                // error: no se ha especificado el nombre del flag corto ni el nombre del flag largo.
+                return NULL; 
+            }
+            DEBUG_PRINT(DEBUG_LEVEL_INFO, "Agregar short_flag: %s\n", flags[i].short_flag);
+            put(hash_table, flags[i].short_flag, &(flags[i]));
+        } else {
+            DEBUG_PRINT(DEBUG_LEVEL_INFO, "Agregar long_flag: %s\n", flags[i].long_flag);
+            put(hash_table, flags[i].long_flag, &(flags[i]));
+            if (flags[i].short_flag != NULL) {
+                DEBUG_PRINT(DEBUG_LEVEL_INFO, "Agregar short_flag: %s\n", flags[i].short_flag);
+            put(hash_table, flags[i].short_flag, &(flags[i]));
+            }
+        }
+    }
+    return hash_table;
+}
 
 
 #endif
