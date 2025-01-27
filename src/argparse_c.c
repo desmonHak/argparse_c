@@ -161,7 +161,9 @@ void formated_args(
                     printf_color("\ttoken id encontrado: %s\n", (const char *)tok->value_process);
                 }*/
                 _f_token_process(lexer, tok, data_ret_of_f_token_process); // procesar el token
-                free(tok);
+                if (tok != NULL) {
+                    free(tok); tok = NULL;
+                }
             }
         }
     }
@@ -233,7 +235,7 @@ void print_data_flag(const data_flag_t* flag) {
 
 void add_flag_to_hash_table(
     Lexer_t * lexer,                                        // lexer del que obtener los tokens via hash_table
-    Token_build_t* tok,                                     // token actual a analizar
+    VOLATILE_DATA Token_build_t* tok,                       // token actual a analizar, es volatil y sera liberado al finalizar esta funcion
     data_ret_f_token_process *data_ret_of_f_token_process   // datos retornados por el callback
 ) {
     Token_id  token_eof         = ((Token_t*)get(lexer->hash_table, build_token_special(TOKEN_EOF)))->type;
@@ -258,7 +260,8 @@ void add_flag_to_hash_table(
                     createArrayList(0, NULL) 
                     : NULL
                 );
-            put(arguments_data->table_args, (const char*)flag_actual, data_this_flag) ;
+            // a pesar de que tok se libere al finalzar la funcion, podemos usarla para calcular el hash
+            put(arguments_data->table_args, (const char*)flag_actual, data_this_flag) ; 
 
             DEBUG_PRINT(DEBUG_LEVEL_INFO, " [Flag encontrada] Agregando flag %s a la tabla de hash\n", (const char*)tok->value_process);
             // print_data_flag(flag_info); // imprimir los datos de la flag encontrada
@@ -278,6 +281,8 @@ void add_flag_to_hash_table(
                  * avanzamo el lexer al siguiente token
                  */
                 Token_build_t *token_desconocido = lexer_next_token(lexer, token_analysis_argparse_c);
+                if (token_desconocido == NULL) return;
+                if (token_desconocido->token == NULL) return;
                 if (token_desconocido->token->type == token_eof) return;
                 if (
                     (
@@ -295,12 +300,17 @@ void add_flag_to_hash_table(
                     } 
                 } else {
                     // poner el token desconocido al array de argumentos de la flag
-                    push_back_a(data_this_flag, token_desconocido);
+                    Token_build_t *token_copia = NULL;
+                    debug_malloc(Token_build_t, token_copia, sizeof(Token_build_t)); // esto es necesario ya que token_desconocido se libera dentro y fuera de la funcion
+                    memcpy(token_copia, token_desconocido, sizeof(Token_build_t));
+                    push_back_a(data_this_flag, token_copia);
+
                     //printf("Agregando argumento %zu para la flag %s -> %s\n", args_flags + 1, (const char*)flag_actual, token_desconocido->value_process);
                     shrink_to_fit(data_this_flag);
                     // forEach(data_this_flag, printTokenBuildInfo); // imprimir los tokens de los argumentos, el arraylist
                     args_flags++;
                     //token_desconocido = lexer_next_token(lexer, token_analysis_argparse_c);
+                    free(token_desconocido);
                     goto repeat_searh_flags;
                 }
                 

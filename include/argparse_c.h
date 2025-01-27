@@ -30,6 +30,8 @@ typedef struct data_flag_t {
     uint8_t required_arguments; // numero de argumentos requeridos por el argumento
 } data_flag_t;
 
+#define VOLATILE_DATA
+
 #define OUT_DATA_UNION 
 #define IN_DATA_UNION 
 /* unión para retornar datos de las funciones de tipo f_token_process*/
