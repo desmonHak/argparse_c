@@ -247,7 +247,7 @@ void add_flag_to_hash_table(
          * posibles que la flag encontrada puede tener, de esa manera, generar un array con el tamaño
          * especificado.
          */
-        argparse_t * arguments_data = data_ret_of_f_token_process->put_flags_short_and_long.arguments;
+        argparse_t * arguments_data = *(data_ret_of_f_token_process->put_flags_short_and_long.arguments);
         data_flag_t* flag_info = (data_flag_t*)get(arguments_data->table_data_flag_t, ((const char*)tok->value_process));
 
         char* flag_actual = tok->value_process;
@@ -255,10 +255,10 @@ void add_flag_to_hash_table(
             ArrayList * data_this_flag = (
                 (
                     flag_info->number_arguments != 0) ? 
-                    createArrayList(flag_info->number_arguments, NULL) 
+                    createArrayList(0, NULL) 
                     : NULL
                 );
-            put(arguments_data->table_data_flag_t, (const char*)flag_actual, data_this_flag) ;
+            put(arguments_data->table_args, (const char*)flag_actual, data_this_flag) ;
 
             DEBUG_PRINT(DEBUG_LEVEL_INFO, " [Flag encontrada] Agregando flag %s a la tabla de hash\n", (const char*)tok->value_process);
             // print_data_flag(flag_info); // imprimir los datos de la flag encontrada
@@ -384,7 +384,7 @@ argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size
     self->table_args = createHashTable(size_hash_table_flags);
 
     // poner la estructura de datos para almacenar los flags y sus valores en la tabla de hash
-    data.put_flags_short_and_long.arguments = self;
+    data.put_flags_short_and_long.arguments = &self;
 
     // agregar todos los flags a la tabla hash con sus respectivos valores
     formated_args(&(self->lexer), token_analysis_argparse_c, add_flag_to_hash_table, &data);
@@ -402,7 +402,7 @@ void free_argparse(argparse_t **self) {
     
     argparse_t *_self = *self;
     if (_self->table_args != NULL){
-        freeHashTable(_self->table_args);
+        freeHashTable(_self->table_args, free);
         _self->table_args = NULL;
     }
     free_lexer(&(_self->lexer)); 

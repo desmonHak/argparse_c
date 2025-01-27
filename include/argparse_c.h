@@ -44,7 +44,7 @@ typedef union data_ret_f_token_process {
     } count_number_flags_long;
 
     struct {
-        IN_DATA_UNION argparse_t* arguments; // apuntador al argparse_t
+        IN_DATA_UNION argparse_t** arguments; // apuntador al argparse_t
     } put_flags_short_and_long;
 } data_ret_f_token_process; 
 

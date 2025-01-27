@@ -32,8 +32,22 @@ int main(int argc, char **argv) {
         return 1;
     }
     argparse_t *arguments = init_argparse(argc, argv, flags, sizeof(flags) / sizeof(data_flag_t) );
+
+    ArrayList *arg_data = get(arguments->table_args, "arg");
+    if (arg_data == NULL) {
+        printf("Error: No se encontro el argumento '--arg'.\n");
+        return 1;
+    }
+
+    printf("Argumento '--arg' con los siguientes valores %zu:\n", size_a(arg_data));
+    forEachNew(arg_data, printTokenBuildInfo);
+
+    for (int i = 0; i < arg_data->Size; i++) {
+        printf("dato[%d]: %p\n", i, arg_data->Array[i]);
+        printTokenBuildInfo((void*)arg_data->Array[i]);
+    }
+
     free_argparse(&arguments);
-        printf("arguments %p\n", arguments);
 
     puts("Exit...");
 }
