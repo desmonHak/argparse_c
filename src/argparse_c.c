@@ -368,12 +368,12 @@ argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size
     self->all_arguments[cursor] = '\0';  // Terminar la cadena
 
     self->lexer = init_lexer(self->all_arguments, self->size_all_arguments);
-    printf("%s\n", self->all_arguments);
+    //printf("%s\n", self->all_arguments);
     func_auto_increment func = inc_token;
 
     const position positions_tokens[] = {
         push_token(&(self->lexer), create_token(create_name_token(token_val),           build_token_special(TOKEN_VAL),             token_val)),
-        push_token(&(self->lexer), create_token(create_name_token(token_arg_short),      "-",                                 token_arg_short)),
+        push_token(&(self->lexer), create_token(create_name_token(token_arg_short),     "-",                                   token_arg_short)),
         push_token(&(self->lexer), create_token(create_name_token(token_arg_long),      "--",                                  token_arg_long)),
         push_token(&(self->lexer), create_token(create_name_token(token_number),        build_token_special(TOKEN_NUMBER),          inc_token)),
         push_token(&(self->lexer), create_token(create_name_token(token_id),            build_token_special(TOKEN_ID),              inc_token)),
@@ -425,6 +425,12 @@ argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size
     return self;
 }
 
+
+static inline freeArrayList_Token_build_t(ArrayList* arr){
+    // liberar cada elemento de ArrayList* que contiene 'Token_build_t*' reservados dinamicamente
+    ArrayList* arr_ = arr;
+    freeArrayList(&arr_, free); 
+}
 void free_argparse(argparse_t **self) {
     DEBUG_PRINT(DEBUG_LEVEL_INFO,
         INIT_TYPE_FUNC_DBG(void, free_argparse)
@@ -435,9 +441,27 @@ void free_argparse(argparse_t **self) {
     
     argparse_t *_self = *self;
     if (_self->table_args != NULL){
-        freeHashTable(_self->table_args, free);
+        /*
+         * Liberar la tabla hash con valores formateados, es necesario liberar cada,
+         * ArrayList* que contiene 'Token_build_t*'
+         */
+        freeHashTable(_self->table_args, freeArrayList_Token_build_t);
         _self->table_args = NULL;
     }
+    if (_self->all_arguments != NULL) {
+        free(_self->all_arguments);
+        _self->all_arguments = NULL;
+    }
+    if (_self->table_data_flag_t != NULL){
+        /*
+         * Esta tabla de hash no se necesita liberar los valores contenidos en cada entrada, ya que,
+         * sus valores son punteros a estructuras de un array definido por el programador, que luego
+         * es pasado a 'convert_data_flag_t_arr_to_hash_table' para construir una tabla hash.
+         */
+        freeHashTable(_self->table_data_flag_t);
+        _self->table_data_flag_t = NULL;
+    }
+
     free_lexer(&(_self->lexer)); 
     free(_self);
     *self = NULL; // poner el puntero liberado a nulo

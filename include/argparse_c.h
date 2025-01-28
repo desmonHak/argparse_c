@@ -3,24 +3,75 @@
 
 #include "global.h"
 
+/*
+ * Tokens basicos y no predefinidos para analizar los argumentos utilizando un lexer/parser.
+ */
 typedef enum names_tokens_argparse_c {
     token_val = 1,
-    token_arg_short, // version "corta" de los argumentos -<name>
-    token_arg_long, // version larga de los argumentos --<name>
+    token_arg_short,    // version "corta" de los argumentos -<name>
+    token_arg_long,     // version larga de los argumentos --<name>
 } names_tokens_argparse_c;
 
+/*
+ * funcion que analiza ek miembro 'all_arguments' en busca de los argumentos y flags, tokenizandolos.
+ */
 Token_build_t* token_analysis_argparse_c (Lexer_t *lexer);
 
+/*
+ * Estructura general para parsear los argumentos utilizando un lexer/parser.
+ */
 typedef struct argparse_t {
-    char        *all_arguments; // todos los argumentos en una sola cadena
-    size_t  size_all_arguments; // tamaño de todos los argumentos en una sola cadena
-    int                   argc; // cantidad de argumentos obtenidos desde el main
-    char                **argv; // arreglo de argumentos obtenidos desde el main
-    Lexer_t              lexer; // lexer para analizar los argumentos
-    HashTable      *table_args; // tabla hash con los argumentos parseados
-    HashTable      *table_data_flag_t; // tabla hash con los datos de las flags definidas
+    /* 
+     * todos los argumentos de 'argv', en una sola 
+     * cadena y entre comillas doble cada uno, esto es necesario para 
+     * que el lexer pueda analizar los argumentos
+     */
+    char        *all_arguments;
+
+    /* tamaño de la cadena 'all_arguments' */
+    size_t  size_all_arguments;
+
+    // cantidad de argumentos obtenidos desde el main
+    int                   argc;
+
+    // arreglo de argumentos obtenidos desde el main
+    char                **argv;
+
+    // lexer para analizar los argumentos
+    Lexer_t              lexer;
+
+    /* 
+     * tabla hash con los argumentos parseados, 
+     * se accede usando get(table_args, "nombre_flag"),
+     * El valor devuelveto es un ArrayList* que contiene 
+     * los datos pasados al argumento, los datos del array
+     * son de tipo Token_build_t*, donde el miembro 'value_process'
+     * contiene el valor del argumento.
+     */
+    HashTable      *table_args;        
+
+    /* 
+     * tabla hash con los datos de las flags definidas por el programador, 
+     * este hash table se usa para procesar los datos de una mejor manera, 
+     * no es necesario liberar sus elementos internos siempre y cuando no 
+     * hayan sido reservados dinamicamente, solo sera necesario liberar la
+     * tabla hash con sus entradas mediante la funcion 'freeHashTable', que
+     * se usa en 'free_argparse'.
+     * Este campo se puede usar para acceder a los datos de una flag ya 
+     * definida, y obtener su informacion, aquella que el programador definio 
+     * en primera instancia.
+     */
+    HashTable      *table_data_flag_t; 
 } argparse_t;
 
+/*
+ * Estructura que representa un argumento y sus datos asociados.
+ * Los datos asociados pueden ser enteros, cadenas, etc.
+ * Los argumentos pueden tener flags asociados y estos flags pueden tener argumentos adicionales.
+ *
+ * @note Los argumentos pueden tener flags asociados y estos flags pueden tener argumentos adicionales.
+ *       Estos argumentos adicionales pueden ser enteros, cadenas, etc.
+ */
 typedef struct data_flag_t {
     char* name;                 // nombre del argumento
     char* short_flag;           // flag corta (opcional si se define long_flag )
@@ -28,8 +79,19 @@ typedef struct data_flag_t {
     char* description;          // descripcion del argumento
     uint8_t number_arguments;   // numero de flags asociados al argumento
     uint8_t required_arguments; // numero de argumentos requeridos por el argumento
-    bool exists_flag; 
-    void (*func_flag_exec)(argparse_t *) ; // función a ejecutar para este argumento si se da
+
+    /*
+     * indica si la flag fue usada, sea su version long o short,
+     * en caso de ser true, la flag fue usada, en caso contrario, es false.
+     * Se puede averiguar que version de la flag fue usada(si la long o la short)
+     * usando el metodo get(table_args, "nombre_flag"), donde 'nombre_flag' es aquella 
+     * por la que se quiere preguntar, en caso de que la funcion devuelva NULL, querra indicar
+     * que la flag no fue usada, o al menos, no esa version, existe la posibilidad de que su omologa si.
+     */
+    bool exists_flag;                       
+
+    void (*func_flag_exec)(argparse_t *) ;  /* 
+                                             * función a ejecutar para este argumento si se da*/
 } data_flag_t;
 
 #define VOLATILE_DATA
