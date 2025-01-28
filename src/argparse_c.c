@@ -331,6 +331,7 @@ void add_flag_to_hash_table(
 
         } else {
             printf("Error: Flag %s no encontrada en la tabla de flags\n", (const char*)flag_actual);
+            if (flag_info != NULL) flag_info->exists_flag = false;
         }
     }
 }
@@ -411,6 +412,15 @@ argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size
 
     // agregar todos los flags a la tabla hash con sus respectivos valores
     formated_args(&(self->lexer), token_analysis_argparse_c, add_flag_to_hash_table, &data);
+
+    for (int i = 0; i < size_flags; i++) {
+        data_flag_t* arguments = &(flags[i]);
+        if (arguments->exists_flag) { // si esta flag se indico por linea de comando
+            if (arguments->func_flag_exec != NULL) {
+                arguments->func_flag_exec(self);
+            }
+        }
+    }
 
     return self;
 }

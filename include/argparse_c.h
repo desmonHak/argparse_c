@@ -28,7 +28,8 @@ typedef struct data_flag_t {
     char* description;          // descripcion del argumento
     uint8_t number_arguments;   // numero de flags asociados al argumento
     uint8_t required_arguments; // numero de argumentos requeridos por el argumento
-    bool    exists_flag; 
+    bool exists_flag; 
+    void (*func_flag_exec)(argparse_t *) ; // función a ejecutar para este argumento si se da
 } data_flag_t;
 
 #define VOLATILE_DATA
@@ -84,6 +85,26 @@ static inline char* get_long_flag(data_flag_t  *self) {
 
 HashTable* convert_data_flag_t_arr_to_hash_table(data_flag_t* flags, size_t size_flags);
 
+/*
+ * Permite saber si una flag fue usada en los argumentos de linea de comandos.
+ */
+/*static inline bool is_flag_exist(argparse_t* args, data_flag_t* flag) {
+    if (args == NULL || flag == NULL)       return false; // si la flag o los argumentos es null
+    if (args->table_data_flag_t == NULL)    return false; // si la tabla hash de los argumentos definidos es null
+    if (args->table_args == NULL)           return false; // si la tabla hash de los argumentos formateados es null
+
+    data_flag_t*flag_actual = NULL;
+    const char* flag_string = flag->long_flag; // probar con la version larga de la flag primero    
+
+    // obtiene la flag y retorna si la flag fue usada:
+    if (flag_string != NULL && (flag_actual = get(args->table_data_flag_t, flag_string)) != NULL) return flag_actual->exists_flag;
+    else {
+        // si fallo la version larga, comprobar usando la version corta
+        if (flag->short_flag != NULL && (flag_actual = get(args->table_data_flag_t, flag->short_flag)) != NULL) return flag_actual->exists_flag;
+        else return false;
+    }
+}*/
+
 #ifdef DEBUG_ENABLE
 #define _check_flags_repetition(flags)                                                    \
     (check_flags_repetition(flags, sizeof(flags) / sizeof(data_flag_t), get_long_flag) || \
@@ -91,5 +112,7 @@ HashTable* convert_data_flag_t_arr_to_hash_table(data_flag_t* flags, size_t size
 #else 
 #define _check_flags_repetition(flags) false
 #endif
+
+#define arg_val(name) arg_val_ ## name
 
 #endif
