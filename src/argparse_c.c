@@ -373,7 +373,7 @@ argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size
 
     const position positions_tokens[] = {
         push_token(&(self->lexer), create_token(create_name_token(token_val),           build_token_special(TOKEN_VAL),             token_val)),
-        push_token(&(self->lexer), create_token(create_name_token(token_arg_short),      "-",                                   token_arg_short)),
+        push_token(&(self->lexer), create_token(create_name_token(token_arg_short),      "-",                                 token_arg_short)),
         push_token(&(self->lexer), create_token(create_name_token(token_arg_long),      "--",                                  token_arg_long)),
         push_token(&(self->lexer), create_token(create_name_token(token_number),        build_token_special(TOKEN_NUMBER),          inc_token)),
         push_token(&(self->lexer), create_token(create_name_token(token_id),            build_token_special(TOKEN_ID),              inc_token)),
