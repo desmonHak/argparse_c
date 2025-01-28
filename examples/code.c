@@ -11,6 +11,9 @@ typedef enum position_args {
 
 void help_display(argparse_t *);
 void sumar(argparse_t *data);
+void restar(argparse_t *data);
+void dividir(argparse_t *data);
+void multiplicar(argparse_t *data);
 
 data_flag_t flags[] = {
         [arg_val(help)] = (data_flag_t){
@@ -38,7 +41,7 @@ data_flag_t flags[] = {
             .number_arguments   = 2,
             .required_arguments = 2,
             .name               = "sumar",
-            .func_flag_exec     = NULL
+            .func_flag_exec     = restar
         },
         [arg_val(div)] = (data_flag_t){
             .long_flag          = "div", 
@@ -47,7 +50,7 @@ data_flag_t flags[] = {
             .number_arguments   = 2,
             .required_arguments = 2,
             .name               = "dividir",
-            .func_flag_exec     = NULL
+            .func_flag_exec     = dividir
         },
         [arg_val(mult)] = (data_flag_t){
             .long_flag          = "mult", 
@@ -56,7 +59,7 @@ data_flag_t flags[] = {
             .number_arguments   = 2,
             .required_arguments = 2,
             .name               = "multiplicacion",
-            .func_flag_exec     = NULL
+            .func_flag_exec     = multiplicar
         }
     };
 
@@ -86,6 +89,90 @@ void sumar(argparse_t *data) {
     int arg2n = strtoll_plus(arg2->value_process, endptr, 10);
 
     printf("Resultado: %d\n", arg1n + arg2n);
+}
+
+void restar(argparse_t *data) {
+    ArrayList *arg_data = get(
+        data->table_args, 
+        flags[arg_val(resta)].short_flag) // obtener los valores del argumento '-r'
+        ?: 
+    get(
+        data->table_args, 
+        flags[arg_val(resta)].long_flag // obtener los valores del argumento '--resta'
+    );
+
+    if (size_a(arg_data) < 2) {
+        printf("Error: Debes indicar dos valores para la resta.\n");
+        return;
+    }
+
+    Token_build_t* arg1 = (Token_build_t*)arg_data->Array[0];
+    Token_build_t* arg2 = (Token_build_t*)arg_data->Array[1];
+
+    char *endptr = NULL;
+    printf("Restando1: %s\n", arg1->value_process);
+    printf("Restando2: %s\n", arg2->value_process);
+    int arg1n = strtoll_plus(arg1->value_process, endptr, 10);
+    endptr = NULL;
+    int arg2n = strtoll_plus(arg2->value_process, endptr, 10);
+
+    printf("Resultado: %d\n", arg1n - arg2n);
+}
+
+void dividir(argparse_t *data) {
+    ArrayList *arg_data = get(
+        data->table_args, 
+        flags[arg_val(div)].short_flag) // obtener los valores del argumento '-d'
+        ?: 
+    get(
+        data->table_args, 
+        flags[arg_val(div)].long_flag // obtener los valores del argumento '--div'
+    );
+
+    if (size_a(arg_data) < 2) {
+        printf("Error: Debes indicar dos valores para la division.\n");
+        return;
+    }
+
+    Token_build_t* arg1 = (Token_build_t*)arg_data->Array[0];
+    Token_build_t* arg2 = (Token_build_t*)arg_data->Array[1];
+
+    char *endptr = NULL;
+    printf("Dividiendo 1: %s\n", arg1->value_process);
+    printf("Dividiendo 2: %s\n", arg2->value_process);
+    int arg1n = strtoll_plus(arg1->value_process, endptr, 10);
+    endptr = NULL;
+    int arg2n = strtoll_plus(arg2->value_process, endptr, 10);
+
+    printf("Resultado: %d\n", arg1n / arg2n);
+}
+
+void multiplicar(argparse_t *data) {
+    ArrayList *arg_data = get(
+        data->table_args, 
+        flags[arg_val(mult)].short_flag) // obtener los valores del argumento '-m'
+        ?: 
+    get(
+        data->table_args, 
+        flags[arg_val(mult)].long_flag // obtener los valores del argumento '--mult'
+    );
+
+    if (size_a(arg_data) < 2) {
+        printf("Error: Debes indicar dos valores para la division.\n");
+        return;
+    }
+
+    Token_build_t* arg1 = (Token_build_t*)arg_data->Array[0];
+    Token_build_t* arg2 = (Token_build_t*)arg_data->Array[1];
+
+    char *endptr = NULL;
+    printf("Multiplicando 1: %s\n", arg1->value_process);
+    printf("Multiplicando 2: %s\n", arg2->value_process);
+    int arg1n = strtoll_plus(arg1->value_process, endptr, 10);
+    endptr = NULL;
+    int arg2n = strtoll_plus(arg2->value_process, endptr, 10);
+
+    printf("Resultado: %d\n", arg1n * arg2n);
 }
 
 void help_display(argparse_t *self) {
