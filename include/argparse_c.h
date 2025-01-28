@@ -146,37 +146,73 @@ typedef union data_ret_f_token_process {
     } put_flags_short_and_long;
 } data_ret_f_token_process; 
 
+/*
+ * subrutinar que se ejecuta para todos los argumentos, puede ser 'count_number_flags_short',
+ * 'count_number_flags_long', 'put_flags_short_and_long', todos los datos se devuelven en una 
+ * union formada de estructuras estructuras de tipo data_ret_f_token_process.
+ */
 typedef void (*f_token_process)(Lexer_t *, Token_build_t*, data_ret_f_token_process*);
 
+/*
+ * libera los recursos reservados por un argparse_t, se liberan los hash tables, 
+ * se libera la memoria de los argumentos, los flags, y los tokens.
+ * @note este metodo libera los recursos reservados por el argparse_t
+ */
 void free_argparse(argparse_t **self);
+
+/*
+ * inicializa un nuevo argparse_t con los argumentos dados, ademas de formar los 'flags' a un hash table,
+ * formatear el 'argv', verificar si hay flags repetidos, inicializar el y ejecutar el lexer y llamar a las 
+ * funciones de cada flag
+ */
 argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size_flags);
+
+/*
+ * devuelve true si en un array de data_flag_t*, se repite alguna flag corta o larga.
+ */
 bool check_flags_repetition(
     data_flag_t* flags,                 // flags con la informacion
     size_t size_flags,                  // cantidad de flags
-    char* (*get_flag_f)(data_flag_t*)   // funcion que devuelve una flag corta o larga
+    char* (*get_flag_f)(data_flag_t*)   // funcion que devuelve una flag corta o larga que se quiere verificar
 );
 
+/*
+ * devuelve cuantas flags largas fueron usadas.
+ */
 void count_number_flags_short(
     Lexer_t * lexer,                                        // lexer del que obtener los tokens via hash_table
     Token_build_t* tok,                                     // token actual a analizar
     data_ret_f_token_process *data_ret_of_f_token_process   // datos retornados por el callback
 );
 
+/*
+ * devuelve cuantas flags cortas fueron usadas.
+ */
 void count_number_flags_long(
     Lexer_t * lexer,                                        // lexer del que obtener los tokens via hash_table
     Token_build_t* tok,                                     // token actual a analizar
     data_ret_f_token_process *data_ret_of_f_token_process   // datos retornados por el callback
 );
 
+/*
+ * devuelve la flag string, version corta.
+ */
 static inline char* get_short_flag(data_flag_t  *self) {
     if (!self) return NULL;
     return self->short_flag;
 }
+
+/*
+ * devuelve la flag string, version larga.
+ */
 static inline char* get_long_flag(data_flag_t  *self) {
     if (!self) return NULL;
     return self->long_flag;
 }
 
+/*
+ * Convierte un arreglo de data_flag_t a una tabla hash, usando sus punteros.
+ */
 HashTable* convert_data_flag_t_arr_to_hash_table(data_flag_t* flags, size_t size_flags);
 
 /*
@@ -199,7 +235,11 @@ HashTable* convert_data_flag_t_arr_to_hash_table(data_flag_t* flags, size_t size
     }
 }*/
 
-#ifdef DEBUG_ENABLE
+/*
+ * Si se activa la flag DEBUG_ENABLE o CHECK_FLAGS_REPETITION, se hara una comprobación de flags repetidas, por el programador,
+ * si el programador define varias flags con el mismo nombre, se generar un error en tiempo de ejecución.
+ */
+#if defined(DEBUG_ENABLE) || defined(CHECK_FLAGS_REPETITION)
 #define _check_flags_repetition(flags)                                                    \
     (check_flags_repetition(flags, sizeof(flags) / sizeof(data_flag_t), get_long_flag) || \
     check_flags_repetition(flags, sizeof(flags) / sizeof(data_flag_t), get_short_flag))
@@ -207,6 +247,7 @@ HashTable* convert_data_flag_t_arr_to_hash_table(data_flag_t* flags, size_t size
 #define _check_flags_repetition(flags) false
 #endif
 
+// permite usar las macros para generar valores para enums que identifiquen las flags en un array de flags
 #define arg_val(name) arg_val_ ## name
 
 #endif
