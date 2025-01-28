@@ -28,6 +28,7 @@ typedef struct data_flag_t {
     char* description;          // descripcion del argumento
     uint8_t number_arguments;   // numero de flags asociados al argumento
     uint8_t required_arguments; // numero de argumentos requeridos por el argumento
+    bool    exists_flag; 
 } data_flag_t;
 
 #define VOLATILE_DATA

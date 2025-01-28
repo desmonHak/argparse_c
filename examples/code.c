@@ -1,17 +1,14 @@
 #include "argparse_c.h"
 
-int main(int argc, char **argv) {
-
-    #ifdef _WIN32
-    #else
-    sigset_t sa_mask;
-    sigemptyset(&sa_mask); // Inicializa la máscara
-    #endif
-
-    // ./code.elf   --arg 2 3 6 -s hola munfo4 5
-    // si se indica que solo 1 arg es obligatorio y el resto opcionales, se lo toma como obligatorios
-
-    data_flag_t flags[] = {
+data_flag_t flags[] = {
+        (data_flag_t){
+            .long_flag          = "help", 
+            .short_flag         = "h", 
+            .description        = "Muestra ayuda",
+            .number_arguments   = 0,
+            .required_arguments = 0,
+            .name               = "help"
+        }, 
         (data_flag_t){
             .long_flag          = "p-hola", 
             .short_flag         = "v", 
@@ -61,6 +58,26 @@ int main(int argc, char **argv) {
             .name               = "multiplicacion",
         }
     };
+
+void help_display() {
+    printf("Uso:  [OPCIONES]...\n");
+    printf("Opciones:\n");
+    for (int i = 0; i < sizeof(flags) / sizeof(data_flag_t); i++) {
+        printf("  --%-10s -%-10s %s\n", flags[i].long_flag, flags[i].short_flag, flags[i].description);
+    }
+}
+
+int main(int argc, char **argv) {
+
+    #ifdef _WIN32
+    #else
+    sigset_t sa_mask;
+    sigemptyset(&sa_mask); // Inicializa la máscara
+    #endif
+
+    // ./code.elf   --arg 2 3 6 -s hola munfo4 5
+    // si se indica que solo 1 arg es obligatorio y el resto opcionales, se lo toma como obligatorios
+
     if (_check_flags_repetition(flags)) {
         printf("Error: Alguna flag que se definio esta repetia esta repetida.\n");
         return 1;
@@ -93,6 +110,10 @@ int main(int argc, char **argv) {
     //    printf("dato[%d]: %p\n", i, arg_data->Array[i]);
     //    printTokenBuildInfo((void*)arg_data->Array[i]);
     //}
+    ArrayList *arg_h = get(arguments->table_args, "h") ?: get(arguments->table_args, "help");
+    if (arg_h != NULL || flags[0].exists_flag == true) {
+        help_display(); 
+    }
 
     free_argparse(&arguments);
 

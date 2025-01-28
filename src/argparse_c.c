@@ -262,7 +262,7 @@ void add_flag_to_hash_table(
                 );
             // a pesar de que tok se libere al finalzar la funcion, podemos usarla para calcular el hash
             put(arguments_data->table_args, (const char*)flag_actual, data_this_flag) ; 
-
+            flag_info->exists_flag = true;
             DEBUG_PRINT(DEBUG_LEVEL_INFO, " [Flag encontrada] Agregando flag %s a la tabla de hash\n", (const char*)tok->value_process);
             // print_data_flag(flag_info); // imprimir los datos de la flag encontrada
 
