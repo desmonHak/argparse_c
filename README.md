@@ -218,4 +218,8 @@ int main(int argc, char **argv) {
 
 ```
 
+El cuarto argumento debe ser la cantidad de elementos que tiene el array.
+Mientras que el tercero debe ser el array en si.
+Al finalizar todo el trato de parametros en nuestro programa, al final se debe liberar la memoria usando `free_argparse`
+
 ----
