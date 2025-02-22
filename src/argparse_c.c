@@ -184,7 +184,7 @@ void formated_args(
             DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: Tok devolvio NULL (tok == NULL)\n");
         } else {
             if ( tok->token == NULL ) {
-                DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: Token no encontrado (tok->token == NULL)\n");
+                DEBUG_PRINT(DEBUG_LEVEL_INFO, "Error: Token no encontrado (tok->token == NULL)\n");
                 goto exit_free_tok;
             } else { // imprimir el token
                 if ( token_eof == tok->token->type ) break;
