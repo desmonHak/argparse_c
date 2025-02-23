@@ -15,7 +15,7 @@ examples_debug: generate_lib_debug
 
 liblexpar_c.a:
 	echo "generando librerias estatica... $@"
-	$(MAKE) -C ./$(PATH_LEXPAR) -f $(MAKE_NAME)
+	$(MAKE) -C ./$(PATH_LEXPAR) -f $(MAKE_NAME) generate_lib
 
 liblexpar_c_debug.a:
 	echo "generando librerias estatica... $@"
