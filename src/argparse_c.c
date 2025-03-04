@@ -43,6 +43,53 @@ static inline Token_build_t* lexer_parser_arg_short (Lexer_t *lexer) {
     return lexer_parser_id(lexer);
 }
 
+Token_build_t* lexer_parser_val(Lexer_t* lexer){
+    DEBUG_PRINT(DEBUG_LEVEL_INFO,
+        INIT_TYPE_FUNC_DBG(Token_build_t*  , lexer_parser_val)
+            TYPE_DATA_DBG(Lexer_t*, "lexer = %p")
+        END_TYPE_FUNC_DBG,
+        lexer);
+    unsigned char * value = (unsigned char*)calloc(1, sizeof(unsigned char));
+
+    while (
+        !isblank(lexer->chartter) &&
+        (
+            isalpha(lexer->chartter) ||
+            isdigit(lexer->chartter) ||
+            ispunct(lexer->chartter)
+            
+        )
+    ){
+        
+        value = (unsigned char*)realloc(value, (strlen(value) + 2) * sizeof(unsigned char));
+        if (value == NULL) {
+            free(value);
+            DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: no se pudo asignar memoria\n");
+            return NULL; // O maneja el error apropiadamente
+        }
+
+        strcat(value, (char[]){lexer->chartter, 0});
+
+        // siempre que el siguiente caracter sea una letra o un dijito, etc, ejecutara lexer_advance, sino interumpe el bucle
+        char next_char = lexer->data[lexer->index+1];
+        if (!isblank(next_char) && next_char != '"' && 
+        (
+            isalpha(next_char) ||
+            isdigit(next_char) ||
+            ispunct(next_char) 
+        ))
+            lexer_advance(lexer);
+        else break;
+    }
+    Token_build_t* self = init_token_build(value);
+    self->token = get(lexer->hash_table, build_token_special(TOKEN_ID));
+    if (self->token == NULL) {
+        DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: Token no encontrado (self->token)\n");
+        return NULL;
+    }
+    return self;
+}
+
 Token_build_t* token_analysis_argparse_c (Lexer_t *lexer) {
     /*
         Los elementos de tipo `Token_build_t*` devueltos por esta funcion deben ser liberados
@@ -93,7 +140,7 @@ Token_build_t* token_analysis_argparse_c (Lexer_t *lexer) {
                 self->token = token_eof;
                 return self;
             default:
-                self = lexer_parser_id(lexer);
+                self = lexer_parser_val(lexer);
                 lexer_advance(lexer); 
                 self->token = get(lexer->hash_table, build_token_special(TOKEN_VAL));
                 return self;
