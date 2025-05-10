@@ -11,3 +11,4 @@
 gmon.*
 error_log.txt
 *.a
+cmake-build-debug/*
