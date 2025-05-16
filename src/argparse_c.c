@@ -49,7 +49,7 @@ Token_build_t* lexer_parser_val(Lexer_t* lexer){
             TYPE_DATA_DBG(Lexer_t*, "lexer = %p")
         END_TYPE_FUNC_DBG,
         lexer);
-    unsigned char * value = (unsigned char*)calloc(1, sizeof(unsigned char));
+    char * value = (char*)calloc(1, sizeof(char));
 
     while (
         !isblank(lexer->chartter) &&
@@ -61,12 +61,12 @@ Token_build_t* lexer_parser_val(Lexer_t* lexer){
         )
     ){
         
-        value = (unsigned char*)realloc(value, (strlen(value) + 2) * sizeof(unsigned char));
+        char* temp = (char*)realloc(value, (strlen(value) + 2) * sizeof(char));
         if (value == NULL) {
             free(value);
             DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: no se pudo asignar memoria\n");
-            return NULL; // O maneja el error apropiadamente
-        }
+            return nullptr; // O maneja el error apropiadamente
+        } else value = temp; // si todo fue correcto, el puntero es adecuado, sino se libero arriba
 
         strcat(value, (char[]){lexer->chartter, 0});
 
@@ -162,7 +162,7 @@ bool check_flags_repetition(
         END_TYPE_FUNC_DBG,
         flags, size_flags, get_flag_f);
     // Coste O(n^2) por la comprobacion de repeticion
-    char* flags_string1 = NULL, *flags_string2 = NULL;
+    char* flags_string1 = nullptr, *flags_string2 = nullptr;
     uint8_t repetitions = 0;
     /* 
      * si una flag se repite en el array de flags, por ejemplo una cantidad de dos veces,
@@ -187,7 +187,7 @@ bool check_flags_repetition(
 }
 
 // funcion "privada" autoincremental
-static const inline Token_id inc_token(void) {
+static inline Token_id inc_token(void) {
     DEBUG_PRINT(DEBUG_LEVEL_INFO,
         INIT_TYPE_FUNC_DBG(static const inline Token_id, inc_token)
             TYPE_DATA_DBG(void, "")
@@ -219,7 +219,7 @@ void formated_args(
         DEBUG_PRINT(DEBUG_LEVEL_ERROR, "Error: Token analysis no inicializado\n");
         return;
     }
-    Token_build_t* tok;
+    Token_build_t* tok = nullptr;
     Token_id token_eof    = ((Token_t*)get(lexer->hash_table, build_token_special(TOKEN_EOF)))->type;
 
     // es necesesario hacerlo si la variable global y static token_id nunca fue definida-
@@ -240,9 +240,8 @@ void formated_args(
                     printf_color("\ttoken id encontrado: %s\n", (const char *)tok->value_process);
                 }*/
                 _f_token_process(lexer, tok, data_ret_of_f_token_process); // procesar el token
-                if (tok != NULL) {
-                    free(tok); tok = NULL;
-                }
+                free(tok);
+                tok = nullptr;
             }
         }
     }
@@ -250,7 +249,7 @@ void formated_args(
     exit_free_tok:
     if (tok != NULL) free(tok); // liberar el Token_build_t
 
-    restore_lexer:
+    //restore_lexer:
     // restaurar el lexer, es necesario para poder seguir operando con el
     restore_lexer(lexer);
 }
@@ -337,7 +336,7 @@ void add_flag_to_hash_table(
                 (
                     flag_info->number_arguments != 0) ? 
                     createArrayList(0, NULL) 
-                    : NULL
+                    : nullptr
                 );
             // a pesar de que tok se libere al finalzar la funcion, podemos usarla para calcular el hash
             put(arguments_data->table_args, (const char*)flag_actual, data_this_flag) ; 
@@ -388,7 +387,7 @@ void add_flag_to_hash_table(
                     if ((token_desconocido->token->type != token_arg_long && token_desconocido->token->type != token_arg_short))
                     {
                         // poner el token desconocido al array de argumentos de la flag
-                        Token_build_t *token_copia = NULL;
+                        Token_build_t *token_copia = nullptr;
                         debug_malloc(Token_build_t, token_copia, sizeof(Token_build_t)); // esto es necesario ya que token_desconocido se libera dentro y fuera de la funcion
                         memcpy(token_copia, token_desconocido, sizeof(Token_build_t));
                         push_back_a(data_this_flag, token_copia);
@@ -423,15 +422,17 @@ argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size
         END_TYPE_FUNC_DBG,
         argc, argv);
 
-    argparse_t *self;
+    argparse_t *self = nullptr;
     debug_calloc(argparse_t, self, 1, sizeof(argparse_t));
+    if (NULL == self) return nullptr;
+
     *self = (argparse_t){.argc = argc, .argv = argv};
     self->size_all_arguments = argc * 3; // multiplicar por 3 para cada argumento por el espacio y las comillas
     for (int i = 1; i < argc; i++){
         self->size_all_arguments += strlen(argv[i]);
     }
 
-    self->all_arguments = NULL;
+    self->all_arguments = nullptr;
     debug_calloc(char, self->all_arguments, self->size_all_arguments + 1, sizeof(char));
 
     size_t cursor = 0;
@@ -505,7 +506,7 @@ argparse_t* init_argparse(int argc, char** argv, data_flag_t* flags, size_t size
 }
 
 
-static inline freeArrayList_Token_build_t(ArrayList* arr){
+static inline void freeArrayList_Token_build_t(ArrayList* arr){
     // liberar cada elemento de ArrayList* que contiene 'Token_build_t*' reservados dinamicamente
     ArrayList* arr_ = arr;
     freeArrayList(&arr_, free); 
@@ -516,7 +517,8 @@ void free_argparse(argparse_t **self) {
             TYPE_DATA_DBG(argparse_t**, "self = %p")
         END_TYPE_FUNC_DBG,
         self);
-    if (self != NULL || *self!= NULL) return;
+
+    if (self != NULL && *self != NULL) return;
     
     argparse_t *_self = *self;
     if (_self->table_args != NULL){
@@ -524,12 +526,12 @@ void free_argparse(argparse_t **self) {
          * Liberar la tabla hash con valores formateados, es necesario liberar cada,
          * ArrayList* que contiene 'Token_build_t*'
          */
-        freeHashTable(_self->table_args, freeArrayList_Token_build_t);
-        _self->table_args = NULL;
+        freeHashTable(_self->table_args, (void (*)(void*))freeArrayList_Token_build_t);
+        _self->table_args = nullptr;
     }
     if (_self->all_arguments != NULL) {
         free(_self->all_arguments);
-        _self->all_arguments = NULL;
+        _self->all_arguments = nullptr;
     }
     if (_self->table_data_flag_t != NULL){
         /*
@@ -538,12 +540,12 @@ void free_argparse(argparse_t **self) {
          * es pasado a 'convert_data_flag_t_arr_to_hash_table' para construir una tabla hash.
          */
         freeHashTable(_self->table_data_flag_t);
-        _self->table_data_flag_t = NULL;
+        _self->table_data_flag_t = nullptr;
     }
 
     free_lexer(&(_self->lexer)); 
     free(_self);
-    *self = NULL; // poner el puntero liberado a nulo
+    *self = nullptr; // poner el puntero liberado a nulo
 }
 
 
@@ -552,7 +554,7 @@ HashTable* convert_data_flag_t_arr_to_hash_table(data_flag_t* flags, size_t size
      * en caso de que flags sea reservado dinamicamente, no se puede liberar mientras el hashtable
      * creado este en uso
      */
-    if (flags == NULL) return NULL;
+    if (flags == NULL) return nullptr;
 
     // crear una tabla hash con la cantidad de flags especificados en size_flags.
     HashTable *hash_table = createHashTable(size_flags*2); // *2 para las flags cortos y largas.
@@ -561,7 +563,7 @@ HashTable* convert_data_flag_t_arr_to_hash_table(data_flag_t* flags, size_t size
         if (flags[i].long_flag == NULL){
             if (flags[i].short_flag == NULL){
                 // error: no se ha especificado el nombre del flag corto ni el nombre del flag largo.
-                return NULL; 
+                return nullptr;
             }
             DEBUG_PRINT(DEBUG_LEVEL_INFO, "Agregar short_flag: %s\n", flags[i].short_flag);
             put(hash_table, flags[i].short_flag, &(flags[i]));
