@@ -518,7 +518,7 @@ void free_argparse(argparse_t **self) {
         END_TYPE_FUNC_DBG,
         self);
 
-    if (self != NULL && *self != NULL) return;
+    if (self == NULL || *self == NULL) return;
     
     argparse_t *_self = *self;
     if (_self->table_args != NULL){
